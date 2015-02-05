@@ -3,6 +3,11 @@ import os
 import codecs
 import sys
 
+# You probably want to change this!
+# I guess ideally this will come as a command-line parameter,
+# but I only want this for one project so I can't be bothered.
+BASE_DIR = "/Users/reilly/Nickel/src/"
+
 def header_files(dir):
     files = []
     for root, dir, filenames in os.walk(dir):
@@ -11,14 +16,20 @@ def header_files(dir):
                 files.append(os.path.join(root, f))
     return files
 
-def get_includes(lines, path):
-    includes = []
+def get_includes(lines, path, visited = []):
+    visited.append(path)
+    includes = set()
     for line in lines:
         if '#include' in line:
+            includePath = ''
             if '"' in line:
-                includes.append(path + '/' + line.split('"')[1])
+                includePath = path + '/' + line.split('"')[1]
             else:
-                includes.append("/Users/reilly/Nickel/src/" + line.split('<')[1][:-1])
+                includePath = BASE_DIR + line.split('<')[1][:-1]
+            incLines = get_lines(includePath)
+            if len(incLines) > 0:
+                includes.add(includePath)
+                includes = includes.union(get_includes(incLines, '/'.join(includePath.split('/')[:-1]), visited))
     return includes
 
 def get_base_classes(lines):
