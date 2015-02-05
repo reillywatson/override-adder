@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 import os
 import codecs
 import sys
@@ -49,7 +50,7 @@ def get_virtual_functions(lines):
 
 def add_override(filename, linesToAdd):
     import envoy
-	import multiprocessing
+    import multiprocessing
     import shutil
     if len(linesToAdd) > 0:
         oldLines = get_lines(filename)
@@ -114,7 +115,7 @@ def add_overrides_recursive(dirName):
 
 def main():
 	if len(sys.argv) < 2:
-		print 'Usage: unusedincludes <paths>'
+		print 'Usage: override <paths>'
 		return -1
 	for path in sys.argv[1:]:
 		add_overrides_recursive(path)
