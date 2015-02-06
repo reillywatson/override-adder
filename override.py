@@ -8,7 +8,19 @@ import sys
 # but I only want this for one project so I can't be bothered.
 BASE_DIR = "/Users/reilly/Nickel/src/"
 
+# not generically useful at all!
+qtHeaderFiles = [h for h in header_files('/Users/reilly/qt5') if '_p' not in h and h.split('/')[-1][0] == 'q']
+def get_qt_includes(classes):
+    includes = set()
+    for c in classes:
+        for q in qtHeaderFiles:
+            if q.endswith(c.lower() + '.h'):
+                includes.add(q)
+    return includes
+
 def header_files(dir):
+    if os.path.isfile(dir):
+        return [dir]
     files = []
     for root, dir, filenames in os.walk(dir):
         for f in filenames:
@@ -90,26 +102,15 @@ def add_override(filename, linesToAdd):
         print 'no changes needed! ' + filename
     return True
 
-def testSubsets(filename, l):
-    import itertools
-    for numtoremove in range(len(l), 0, -1):
-        for test in itertools.combinations(l, numtoremove):
-            print 'testing: ', filename, test
-            if add_override(filename, test):
-                return
-
-def testRemovingIncludes(filename):
-	unused = override_candidates(filename)
-	testSubsets(filename, unused)
-
 def override_candidates(header):
     lines = get_lines(header)
     supers = get_base_classes(lines)
     includes = get_includes(lines, '/'.join(header.split('/')[:-1]))
+    includes = includes.union(get_qt_includes(supers))
     base_files = []
     for s in supers:
         for include in includes:
-            if s in include:
+            if s.lower() in include.lower():
                 base_files.append(include)
     candidates = set()
     for base in base_files:
@@ -119,17 +120,30 @@ def override_candidates(header):
                     candidates.add(lineNo)
     return candidates
 
+def test_subsets(filename, l):
+    import itertools
+    for numtoremove in range(len(l), 0, -1):
+        for test in itertools.combinations(l, numtoremove):
+            print 'testing: ', filename, test
+            if add_override(filename, test):
+                return
+
+def test_adding_overrides(filename):
+    unused = override_candidates(filename)
+    test_subsets(filename, unused)
+
 def add_overrides_recursive(dirName):
-	files = header_files(dirName)
-	for f in files:
-		testRemovingIncludes(f)
+    files = header_files(dirName)
+    for f in files:
+        test_adding_overrides(f)
 
 def main():
-	if len(sys.argv) < 2:
-		print 'Usage: override <paths>'
-		return -1
-	for path in sys.argv[1:]:
-		add_overrides_recursive(path)
+    if len(sys.argv) < 2:
+        print 'Usage: override <paths>'
+        return -1
+    for path in sys.argv[1:]:
+        add_overrides_recursive(path)
 
 if __name__ == '__main__':
-	sys.exit(main())
+    sys.exit(main())
+
